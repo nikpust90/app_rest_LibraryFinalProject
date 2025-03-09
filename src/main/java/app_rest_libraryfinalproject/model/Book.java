@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @Entity
+@Builder
 @Table(name = "book")
 @NoArgsConstructor
 public class Book {
@@ -44,5 +45,9 @@ public class Book {
 
     @Column(name = "removedPerson")
     String removedPerson;
+
+    @ManyToOne
+    @JoinColumn(name = "owner_id")
+    private Person owner;
 
 }

@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -57,6 +58,9 @@ public class Person {
 
     @Column(name = "removedPerson")
     String removedPerson;
+
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = false)
+    private List<Book> books;
 
 
 
