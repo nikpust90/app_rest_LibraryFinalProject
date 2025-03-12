@@ -46,6 +46,9 @@ public class Book {
     @Column(name = "removedPerson")
     String removedPerson;
 
+    @Column(name = "isBookDeleted")
+    Boolean isBookDeleted;
+
     @ManyToOne
     @JoinColumn(name = "owner_id")
     private Person owner;

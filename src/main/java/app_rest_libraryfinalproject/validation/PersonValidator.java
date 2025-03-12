@@ -29,7 +29,6 @@ public class PersonValidator implements Validator {
                 "User with name " + person.getUsername() + " already exists");
     }
 
-
     @Override
     public boolean supports(Class<?> clazz) {
         return Person.class.equals(clazz);

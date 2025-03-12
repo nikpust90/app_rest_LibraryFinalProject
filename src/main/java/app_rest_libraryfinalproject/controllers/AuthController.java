@@ -1,6 +1,13 @@
 package app_rest_libraryfinalproject.controllers;
 
-import app_rest_libraryfinalproject.validation.AuthValidator;
+import app_rest_libraryfinalproject.dto.AuthenticationDTO;
+import app_rest_libraryfinalproject.dto.PersonDTO;
+import app_rest_libraryfinalproject.dto.PersonDeleteDTO;
+import app_rest_libraryfinalproject.dto.PersonUpdateDTO;
+import app_rest_libraryfinalproject.model.Person;
+import app_rest_libraryfinalproject.service.PeopleService;
+import app_rest_libraryfinalproject.util.JWTUtil;
+import app_rest_libraryfinalproject.validation.PersonValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,16 +24,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import app_rest_libraryfinalproject.dto.AuthenticationDTO;
-import app_rest_libraryfinalproject.dto.PersonDTO;
-import app_rest_libraryfinalproject.dto.PersonDeleteDTO;
-import app_rest_libraryfinalproject.dto.PersonUpdateDTO;
-import app_rest_libraryfinalproject.model.Person;
-import app_rest_libraryfinalproject.service.PeopleService;
-import app_rest_libraryfinalproject.util.JWTUtil;
-import app_rest_libraryfinalproject.validation.PersonValidator;
-
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -37,92 +34,168 @@ import java.util.Optional;
 public class AuthController {
     private final PeopleService peopleService;
     private final JWTUtil jwtUtil;
+    private final PersonValidator personValidator;
     private final AuthenticationManager authenticationManager;
-    private final AuthValidator authValidator;
 
-    @PostMapping("/login")
+    @PostMapping("/login") // Обрабатываем POST-запрос по адресу /login
     public ResponseEntity<Map<String, String>> login(@RequestBody AuthenticationDTO authDTO) {
+        Logger log = LoggerFactory.getLogger(AuthController.class);
+
+        // Логируем попытку входа
         log.info("Login attempt for user: {}", authDTO.getUsername());
+
         try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(authDTO.getUsername(), authDTO.getPassword())
-            );
-            return peopleService.findByUsername(authDTO.getUsername())
-                    .map(person -> {
-                        String token = jwtUtil.generateToken(person.getUsername(), person.getRole());
-                        log.info("User '{}' successfully logged in", authDTO.getUsername());
-                        return ResponseEntity.ok(Map.of("jwt-token", token));
-                    })
-                    .orElseGet(() -> {
-                        log.warn("Login failed: User '{}' not found", authDTO.getUsername());
-                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "User not found"));
-                    });
+            // Создаем объект аутентификации с введенными данными
+            UsernamePasswordAuthenticationToken authenticationToken =
+                    new UsernamePasswordAuthenticationToken(authDTO.getUsername(), authDTO.getPassword());
+
+            // Выполняем аутентификацию через Spring Security
+            authenticationManager.authenticate(authenticationToken);
+
+            // Если аутентификация успешна, получаем пользователя из базы
+            Optional<Person> personOptional = peopleService.findByUsername(authDTO.getUsername());
+
+            // Проверяем, что пользователь существует (на всякий случай)
+            if (personOptional.isEmpty()) {
+                log.warn("Login failed: User '{}' not found", authDTO.getUsername());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "User not found"));
+            }
+
+            // Получаем роль пользователя из базы данных
+            Person person = personOptional.get();
+            String role = person.getRole(); // Получаем роль из сущности Person (можно настроить на основе данных)
+
+            // Генерируем JWT токен с учетом роли
+            String token = jwtUtil.generateToken(authDTO.getUsername(), role);
+
+            log.info("User '{}' successfully logged in", authDTO.getUsername());
+
+            // Возвращаем успешный ответ с токеном
+            return ResponseEntity.ok(Map.of("jwt-token", token));
+
         } catch (BadCredentialsException e) {
             log.warn("Login failed: Incorrect password for user '{}'", authDTO.getUsername());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Incorrect login or password"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Incorrect login or password"));
         }
     }
 
-    @PostMapping("/registration")
-    public Map<String, String> register(@RequestBody @Valid PersonDTO personDTO, BindingResult bindingResult) {
-        log.info("Registration attempt for user: {}", personDTO.getUsername());
+    @PostMapping("/registration") // Обрабатываем POST-запрос по адресу /registration
+    public Map<String, String> register(@RequestBody @Valid PersonDTO personDTO,
+                                        BindingResult bindingResult) {
+        // Конвертируем DTO в сущность Person (чтобы затем работать с ней)
         Person person = peopleService.convertDTOToPerson(personDTO);
-        authValidator.validateRegistration(person, bindingResult);
+
+        // Проверяем валидность данных пользователя (например, уникальность email, username и т. д.)
+        personValidator.validate(person, bindingResult);
+
+        // Если есть ошибки валидации, возвращаем их список
         if (bindingResult.hasErrors()) {
-            log.warn("Registration failed: Validation errors for user '{}'", personDTO.getUsername());
             return Map.of("message", "Validation failed", "errors", bindingResult.getAllErrors().toString());
         }
+
+        // Проверяем, существует ли пользователь с таким же username (лучше проверять перед созданием)
+        if (peopleService.findByUsername(person.getUsername()).isPresent()) {
+            return Map.of("message", "User with this username already exists");
+        }
+
+        // Обрабатываем роль (добавляем префикс "ROLE_", если его нет)
+        String role = personDTO.getRole() != null ? personDTO.getRole().toUpperCase() : "USER";
+        if (!role.startsWith("ROLE_")) {
+            role = "ROLE_" + role;
+        }
+        person.setRole(role);
+
+        // Сохраняем пользователя в базе
         peopleService.savePerson(person);
-        log.info("User '{}' successfully registered", personDTO.getUsername());
-        String token = jwtUtil.generateToken(person.getUsername(), person.getRole());
+
+        // Генерируем JWT-токен для нового пользователя
+        String token = jwtUtil.generateToken(person.getUsername(), role);
+
+        // Возвращаем токен клиенту (чтобы он мог сразу использовать авторизацию)
         return Map.of("jwt-token", token);
     }
 
-    @PostMapping("/updateUser")
+    @PostMapping("/updateUser") // Обрабатываем POST-запрос по адресу /updateUser
     @PreAuthorize("hasRole('ADMIN')")
-    public Map<String, Object> updateUser(@RequestBody @Valid PersonUpdateDTO personDTO, BindingResult bindingResult) {
-        log.info("Update attempt for user: {}", personDTO.getUsername());
-        Map<String, Object> response = new HashMap<>();
-        return peopleService.findByUsername(personDTO.getUsername())
-                .map(person -> {
-                    authValidator.validateUpdate(personDTO, bindingResult);
-                    if (bindingResult.hasErrors()) {
-                        log.warn("Update failed: Validation errors for user '{}'", personDTO.getUsername());
-                        response.put("message", "error body");
-                        return response;
-                    }
-                    peopleService.updatePerson(authValidator.updateFields(person, personDTO));
-                    log.info("User '{}' successfully updated", personDTO.getUsername());
-                    response.put("username", person.getUsername());
-                    response.put("status", "updated");
-                    return response;
-                })
-                .orElseGet(() -> {
-                    log.warn("Update failed: User '{}' not found", personDTO.getUsername());
-                    response.put("message", "User not found");
-                    return response;
-                });
-    }
+    public Map<String, Object> updateUser(@RequestBody @Valid PersonUpdateDTO personDTO,
+                                          BindingResult bindingResult) {
 
+        // Ищем пользователя по username в базе данных
+        Optional<Person> existingPerson = peopleService.findByUsername(personDTO.getUsername());
 
-    @PostMapping("/deleteUser")
-    @PreAuthorize("hasRole('ADMIN')")
-    public Map<String, Object> deleteUser(@RequestBody @Valid PersonDeleteDTO personDTO, BindingResult bindingResult) {
-        log.info("Delete attempt for user: {}", personDTO.getUsername());
-        authValidator.validateDeletion(personDTO, bindingResult);
+        // Если пользователь не найден, возвращаем сообщение об ошибке
+        if (existingPerson.isEmpty()) {
+            return Map.of("message", "User not found");
+        }
+
+        // Получаем объект Person из Optional (теперь он точно не пустой)
+        Person personToUpdate = existingPerson.get();
+
+        // Проверяем, есть ли ошибки валидации (например, пустые или некорректные поля)
         if (bindingResult.hasErrors()) {
-            log.warn("Delete failed: Validation errors for user '{}'", personDTO.getUsername());
             return Map.of("message", "error body");
         }
-        return peopleService.findByUsername(personDTO.getUsername())
-                .map(person -> {
-                    peopleService.deletePerson(person.getId());
-                    log.info("User '{}' successfully deleted", personDTO.getUsername());
-                    return Map.of("username", (Object) person.getUsername(), "status", (Object) "delete");
-                })
-                .orElseGet(() -> {
-                    log.warn("Delete failed: User '{}' not found", personDTO.getUsername());
-                    return Map.of("message", (Object) "User not found");
-                });
+
+        // Обновляем только переданные поля
+        if (personDTO.getYearOfBirth() != null) {
+            personToUpdate.setYearOfBirth(personDTO.getYearOfBirth());
+        }
+        if (personDTO.getEmail() != null) {
+            personToUpdate.setEmail(personDTO.getEmail());
+        }
+        if (personDTO.getRole() != null) {
+            // Приводим роль к верхнему регистру и добавляем "ROLE_", если его нет
+            String role = personDTO.getRole().toUpperCase();
+            if (!role.startsWith("ROLE_")) {
+                role = "ROLE_" + role;
+            }
+            personToUpdate.setRole(role);
+        }
+
+        // Сохраняем обновленного пользователя в базе данных
+        peopleService.updatePerson(personToUpdate);
+
+        // Возвращаем успешный ответ с обновленными данными
+        return Map.of(
+                "username", personToUpdate.getUsername(),
+                "yearOfBirth", personToUpdate.getYearOfBirth(),
+                "email", personToUpdate.getEmail(),
+                "role", personToUpdate.getRole(),
+                "status", "updated"
+        );
     }
+
+    @PostMapping("/deleteUser") // Обрабатываем POST-запрос по адресу /deleteUser
+    @PreAuthorize("hasRole('ADMIN')")
+    public Map<String, Object> deleteUser(@RequestBody @Valid PersonDeleteDTO personDTO,
+                                          BindingResult bindingResult) {
+
+        // Проверяем, есть ли ошибки валидации (например, пустые поля)
+        if (bindingResult.hasErrors()) {
+            return Map.of("message", "error body");
+        }
+
+        // Ищем пользователя по username в базе данных
+        Optional<Person> person = peopleService.findByUsername(personDTO.getUsername());
+
+        // Если пользователь не найден, возвращаем сообщение об ошибке
+        if (person.isEmpty()) {
+            return Map.of("message", "User not found");
+        }
+
+        // Получаем объект Person из Optional (теперь он точно не пустой)
+        Person personToDelete = person.get();
+
+        // Удаляем пользователя из базы данных по ID
+        peopleService.deletePerson(personToDelete.getId());
+
+        // Возвращаем успешный ответ о том, что пользователь удален
+        return Map.of(
+                "username", personToDelete.getUsername(),
+                "status", "delete"
+        );
+    }
+
 }

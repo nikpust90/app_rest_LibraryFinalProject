@@ -12,8 +12,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BookMapper {
 
-
-
     // Маппинг для получения списка книг (без createdPerson и createdAt)
     public BookDto toDtoForGet(Book book) {
         return new BookDto(
@@ -25,6 +23,7 @@ public class BookMapper {
     }
 
     // Маппинг для ответа при создании книги (с createdPerson и createdAt)
+// Маппинг для ответа при создании книги
     public BookDto toDtoForCreate(Book book) {
         return new BookDto(
                 book.getName(),
@@ -32,7 +31,21 @@ public class BookMapper {
                 book.getAuthor(),
                 book.getAnnotation(),
                 book.getCreatedPerson(),
-                book.getCreatedAt()
+                book.getCreatedAt(),
+                false // это не обновление
+        );
+    }
+
+    // Маппинг для ответа при обновлении книги
+    public BookDto toDtoForUpdate(Book book) {
+        return new BookDto(
+                book.getName(),
+                book.getYearOfProduction(),
+                book.getAuthor(),
+                book.getAnnotation(),
+                book.getUpdatedPerson(),
+                book.getUpdatedAt(),
+                true // это обновление
         );
     }
 
@@ -53,6 +66,4 @@ public class BookMapper {
                 .createdAt(bookDto.getCreatedAt())
                 .build();
     }
-
-
 }

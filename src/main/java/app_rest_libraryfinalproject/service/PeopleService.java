@@ -19,7 +19,6 @@ public class PeopleService {
     private final PasswordEncoder passwordEncoder;
     private final ModelMapper modelMapper;
 
-
     public void savePerson(Person person) {
         person.setPassword(passwordEncoder.encode(person.getPassword()));
         peopleRepository.save(person);
@@ -41,7 +40,6 @@ public class PeopleService {
     public void doAdminSomething() {
         System.out.println("Admin is doing something");
     }
-
 
     public Person convertDTOToPerson(PersonDTO personDTO) {
         return modelMapper.map(personDTO, Person.class);
