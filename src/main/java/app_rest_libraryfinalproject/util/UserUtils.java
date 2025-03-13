@@ -9,11 +9,10 @@ public class UserUtils {
     // Получить имя текущего пользователя
     public static String getCurrentUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            return ((UserDetails) principal).getUsername();
-        } else {
-            return principal.toString();
+        if (principal instanceof UserDetails userDetails) {
+            return userDetails.getUsername();
         }
+        return principal.toString();
     }
 
     // Получить текущее время

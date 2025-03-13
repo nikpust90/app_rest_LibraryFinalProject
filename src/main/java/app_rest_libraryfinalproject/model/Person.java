@@ -30,10 +30,10 @@ public class Person {
     private String username;
 
     @Column(name = "age")
-    Integer age;
+    private Integer age;
 
     @Column(name = "phoneNumber")
-    String phoneNumber;
+    private String phoneNumber;
 
     @Column(name = "year_of_birth")
     private Integer yearOfBirth;
@@ -48,23 +48,20 @@ public class Person {
     private String email;
 
     @Column(name = "createdAt")
-    LocalDateTime createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "removedAt")
-    LocalDateTime removedAt;
+    private LocalDateTime removedAt;
 
     @Column(name = "createdPerson")
-    String createdPerson;
+    private String createdPerson;
 
     @Column(name = "removedPerson")
-    String removedPerson;
+    private String removedPerson;
 
     @Column(name = "removed")
-    Boolean removed;
+    private Boolean removed;
 
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = false)
     private List<Book> books;
-
-
-
 }

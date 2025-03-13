@@ -1,6 +1,8 @@
 package app_rest_libraryfinalproject.controllers;
 
 import app_rest_libraryfinalproject.dto.BookDto;
+import app_rest_libraryfinalproject.mappers.BookMapper;
+import app_rest_libraryfinalproject.repositories.BookRepository;
 import app_rest_libraryfinalproject.service.BookService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,12 +28,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class BookController {
 
     private final BookService bookService;
+    private final BookRepository bookRepository;
+    private final BookMapper bookMapper;
 
     @GetMapping("/")
-    public ResponseEntity<List<BookDto>> GetAllBooks() {
-        log.info("Запрос на получение всех книг");
-        List<BookDto> books = bookService.getAllBooks();
-        return ResponseEntity.ok(books);
+    public List<BookDto> getAllBooks() {
+        log.debug("Получаем все книги");
+        return bookRepository.findAll().stream()
+                .map(bookMapper::toDtoForGet)
+                .toList();
     }
 
     /**
@@ -46,7 +51,8 @@ public class BookController {
     @GetMapping("/{id}")
     public ResponseEntity<BookDto> getBookById(@PathVariable Long id) {
         log.info("Запрос на получение книги с ID {}", id);
-        return ResponseEntity.ok(bookService.getBookById(id));
+        BookDto book = bookService.getBookById(id);
+        return ResponseEntity.ok(book);
     }
 
     /**

@@ -23,14 +23,6 @@ public class BookService {
     private final BookMapper mapper;
     private final PeopleRepository peopleRepository;
 
-
-    // Получить все книги
-    public List<BookDto> getAllBooks() {
-        log.debug("Получаем все книги");
-        List<Book> books = repository.findAll();
-        return mapper.toListDto(books);
-    }
-
     // Получить книгу по ID
     public BookDto getBookById(Long id) {
         log.debug("Получаем книгу с ID: {}", id);
@@ -42,9 +34,9 @@ public class BookService {
     // Получить книги, принадлежащие конкретному пользователю
     public List<BookDto> getBooksByUser(Long userId) {
         log.debug("Получаем книги пользователя с ID: {}", userId);
-        Person person = peopleRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Пользователь с ID " + userId + " не найден"));
-        return mapper.toListDto(person.getBooks());
+        return repository.findByOwnerId(userId).stream()
+                .map(mapper::toDtoForGet)
+                .toList();
     }
 
     // Назначить книгу текущему пользователю
@@ -120,7 +112,5 @@ public class BookService {
         // Сохраняем изменения
         repository.save(book);
     }
-
-
 }
 

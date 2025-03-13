@@ -221,7 +221,4 @@ public class AuthController {
                 "status", "delete"
         );
     }
-
-
-
 }

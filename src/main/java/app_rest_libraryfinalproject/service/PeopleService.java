@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import app_rest_libraryfinalproject.dto.PersonDTO;
 import app_rest_libraryfinalproject.model.Person;
 import app_rest_libraryfinalproject.repositories.PeopleRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -19,6 +20,7 @@ public class PeopleService {
     private final PasswordEncoder passwordEncoder;
     private final ModelMapper modelMapper;
 
+    @Transactional
     public void savePerson(Person person) {
         person.setPassword(passwordEncoder.encode(person.getPassword()));
         peopleRepository.save(person);
