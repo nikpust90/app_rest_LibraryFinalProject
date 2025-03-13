@@ -59,6 +59,9 @@ public class Person {
     @Column(name = "removedPerson")
     String removedPerson;
 
+    @Column(name = "removed")
+    Boolean removed;
+
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = false)
     private List<Book> books;
 

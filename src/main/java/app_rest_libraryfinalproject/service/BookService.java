@@ -6,13 +6,11 @@ import app_rest_libraryfinalproject.model.Book;
 import app_rest_libraryfinalproject.model.Person;
 import app_rest_libraryfinalproject.repositories.BookRepository;
 import app_rest_libraryfinalproject.repositories.PeopleRepository;
+import app_rest_libraryfinalproject.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,6 +22,7 @@ public class BookService {
     private final BookRepository repository;
     private final BookMapper mapper;
     private final PeopleRepository peopleRepository;
+
 
     // Получить все книги
     public List<BookDto> getAllBooks() {
@@ -51,7 +50,7 @@ public class BookService {
     // Назначить книгу текущему пользователю
     @Transactional  // Операция, которая должна быть атомарной
     public void assignBookToCurrentUser(Long bookId) {
-        String username = getCurrentUsername();
+        String username = UserUtils.getCurrentUsername();
         log.info("Назначаем книгу с ID {} пользователю с username {}", bookId, username);
 
         Book book = repository.findById(bookId)
@@ -79,11 +78,11 @@ public class BookService {
         }
 
         // Получаем имя текущего пользователя
-        String currentUser = getCurrentUsername();
+        String currentUser = UserUtils.getCurrentUsername();
 
         Book book = mapper.toEntity(bookDto);  // Преобразуем DTO в сущность
         book.setCreatedPerson(currentUser);
-        book.setCreatedAt(LocalDateTime.now());
+        book.setCreatedAt(UserUtils.getCurrentTime());
 
         // Сохраняем книгу и возвращаем её DTO
         return mapper.toDtoForCreate(repository.save(book));
@@ -100,8 +99,8 @@ public class BookService {
         book.setAuthor(bookDto.getAuthor());
         book.setAnnotation(bookDto.getAnnotation());
         book.setYearOfProduction(bookDto.getYearOfProduction());
-        book.setUpdatedAt(LocalDateTime.now());
-        book.setUpdatedPerson(getCurrentUsername());
+        book.setUpdatedAt(UserUtils.getCurrentTime());
+        book.setUpdatedPerson(UserUtils.getCurrentUsername());
 
         // Сохраняем обновления
         return mapper.toDtoForUpdate(repository.save(book));
@@ -114,22 +113,14 @@ public class BookService {
         Book book = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Книга с ID " + id + " не найдена"));
 
-        book.setRemovedAt(LocalDateTime.now());
-        book.setRemovedPerson(getCurrentUsername());
+        book.setRemovedAt(UserUtils.getCurrentTime());
+        book.setRemovedPerson(UserUtils.getCurrentUsername());
         book.setIsBookDeleted(true);
 
         // Сохраняем изменения
         repository.save(book);
     }
 
-    // Получить имя текущего пользователя
-    private String getCurrentUsername() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            return ((UserDetails) principal).getUsername();
-        } else {
-            return principal.toString();
-        }
-    }
+
 }
 

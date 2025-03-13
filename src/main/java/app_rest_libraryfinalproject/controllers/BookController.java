@@ -13,6 +13,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -89,7 +91,7 @@ public class BookController {
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<BookDto> createBook(@Valid @RequestBody BookDto bookDto) {
+    public ResponseEntity<BookDto> createBook(@RequestBody @Valid BookDto bookDto) {
         log.info("Запрос на создание новой книги: {}", bookDto);
         BookDto createdBook = bookService.createBook(bookDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdBook);
@@ -124,10 +126,10 @@ public class BookController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
+    public ResponseEntity<Map<String, String>> deleteBook(@PathVariable Long id) {
         log.info("Запрос на удаление книги с ID {}", id);
         bookService.deleteBook(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(Map.of("status", "deleted"));
     }
 
     /**

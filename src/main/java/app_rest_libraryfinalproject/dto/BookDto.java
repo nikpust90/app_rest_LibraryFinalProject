@@ -1,15 +1,12 @@
 package app_rest_libraryfinalproject.dto;
 
-import app_rest_libraryfinalproject.model.Person;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 
 @Data
@@ -59,15 +56,10 @@ public class BookDto {
             this.createdAt = timestamp;
         }
     }
-
     public BookDto(String name, Integer yearOfProduction, String author, String annotation) {
         this.name = name;
         this.yearOfProduction = yearOfProduction;
         this.author = author;
         this.annotation = annotation;
     }
-
-
-
-
 }

@@ -4,9 +4,12 @@ import app_rest_libraryfinalproject.dto.AuthenticationDTO;
 import app_rest_libraryfinalproject.dto.PersonDTO;
 import app_rest_libraryfinalproject.dto.PersonDeleteDTO;
 import app_rest_libraryfinalproject.dto.PersonUpdateDTO;
+import app_rest_libraryfinalproject.model.Book;
 import app_rest_libraryfinalproject.model.Person;
+import app_rest_libraryfinalproject.repositories.BookRepository;
 import app_rest_libraryfinalproject.service.PeopleService;
 import app_rest_libraryfinalproject.util.JWTUtil;
+import app_rest_libraryfinalproject.util.UserUtils;
 import app_rest_libraryfinalproject.validation.PersonValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +22,15 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -36,6 +43,7 @@ public class AuthController {
     private final JWTUtil jwtUtil;
     private final PersonValidator personValidator;
     private final AuthenticationManager authenticationManager;
+    private final BookRepository bookRepository;
 
     @PostMapping("/login") // Обрабатываем POST-запрос по адресу /login
     public ResponseEntity<Map<String, String>> login(@RequestBody AuthenticationDTO authDTO) {
@@ -106,6 +114,10 @@ public class AuthController {
             role = "ROLE_" + role;
         }
         person.setRole(role);
+
+        // Заполняем поля createdAt и createdPerson
+        person.setCreatedAt(UserUtils.getCurrentTime());
+        person.setCreatedPerson(UserUtils.getCurrentUsername());
 
         // Сохраняем пользователя в базе
         peopleService.savePerson(person);
@@ -188,8 +200,20 @@ public class AuthController {
         // Получаем объект Person из Optional (теперь он точно не пустой)
         Person personToDelete = person.get();
 
-        // Удаляем пользователя из базы данных по ID
-        peopleService.deletePerson(personToDelete.getId());
+        // Обновляем владельцев всех книг, связанных с этим пользователем
+        List<Book> books = personToDelete.getBooks();
+        for (Book book : books) {
+            book.setOwner(null);  // Устанавливаем владельца книги в null
+            bookRepository.save(book);  // Сохраняем изменения
+        }
+
+        // Заполняем поля removedAt и removedPerson
+        personToDelete.setRemovedAt(UserUtils.getCurrentTime());
+        personToDelete.setRemovedPerson(UserUtils.getCurrentUsername());
+
+        // Проставляем флаг removed в true, не удаляя пользователя из базы данных
+        personToDelete.setRemoved(true);
+        peopleService.savePerson(personToDelete); // Сохраняем обновленного пользователя
 
         // Возвращаем успешный ответ о том, что пользователь удален
         return Map.of(
@@ -197,5 +221,7 @@ public class AuthController {
                 "status", "delete"
         );
     }
+
+
 
 }

@@ -25,7 +25,7 @@ public class Book {
     @Column(name = "author")
     String author;
 
-    @Column(name = "annotation")
+    @Column(name = "annotation", length = 1000)
     String annotation;
 
     @Column(name = "createdAt")
