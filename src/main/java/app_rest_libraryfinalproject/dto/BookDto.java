@@ -41,25 +41,4 @@ public class BookDto {
     private String removedPerson;
 
     private Long ownerId;
-
-    public BookDto(String name, Integer yearOfProduction, String author, String annotation,
-                   String person, LocalDateTime timestamp, boolean isUpdate) {
-        this.name = name;
-        this.yearOfProduction = yearOfProduction;
-        this.author = author;
-        this.annotation = annotation;
-        if (isUpdate) {
-            this.updatedPerson = person;
-            this.updatedAt = timestamp;
-        } else {
-            this.createdPerson = person;
-            this.createdAt = timestamp;
-        }
-    }
-    public BookDto(String name, Integer yearOfProduction, String author, String annotation) {
-        this.name = name;
-        this.yearOfProduction = yearOfProduction;
-        this.author = author;
-        this.annotation = annotation;
-    }
 }
