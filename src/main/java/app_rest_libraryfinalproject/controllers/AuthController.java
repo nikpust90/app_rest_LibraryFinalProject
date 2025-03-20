@@ -45,9 +45,8 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final BookRepository bookRepository;
 
-    @PostMapping("/login") // Обрабатываем POST-запрос по адресу /login
+    @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody AuthenticationDTO authDTO) {
-        Logger log = LoggerFactory.getLogger(AuthController.class);
 
         // Логируем попытку входа
         log.info("Login attempt for user: {}", authDTO.getUsername());
@@ -89,7 +88,7 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/registration") // Обрабатываем POST-запрос по адресу /registration
+    @PostMapping("/registration")
     public Map<String, String> register(@RequestBody @Valid PersonDTO personDTO,
                                         BindingResult bindingResult) {
         // Конвертируем DTO в сущность Person (чтобы затем работать с ней)
@@ -129,7 +128,7 @@ public class AuthController {
         return Map.of("jwt-token", token);
     }
 
-    @PostMapping("/updateUser") // Обрабатываем POST-запрос по адресу /updateUser
+    @PostMapping("/updateUser")
     @PreAuthorize("hasRole('ADMIN')")
     public Map<String, Object> updateUser(@RequestBody @Valid PersonUpdateDTO personDTO,
                                           BindingResult bindingResult) {
@@ -179,7 +178,7 @@ public class AuthController {
         );
     }
 
-    @PostMapping("/deleteUser") // Обрабатываем POST-запрос по адресу /deleteUser
+    @PostMapping("/deleteUser")
     @PreAuthorize("hasRole('ADMIN')")
     public Map<String, Object> deleteUser(@RequestBody @Valid PersonDeleteDTO personDTO,
                                           BindingResult bindingResult) {

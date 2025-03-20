@@ -20,6 +20,7 @@ import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RestController
@@ -28,15 +29,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class BookController {
 
     private final BookService bookService;
-    private final BookRepository bookRepository;
-    private final BookMapper bookMapper;
 
     @GetMapping("/")
-    public List<BookDto> getAllBooks() {
+    public ResponseEntity<List<BookDto>> getAllBooks() {
         log.debug("Получаем все книги");
-        return bookRepository.findAll().stream()
-                .map(bookMapper::toDtoForGet)
-                .toList();
+        List<BookDto> books = bookService.getAllBooks();
+        return ResponseEntity.ok(books);
     }
 
     /**
@@ -67,7 +65,8 @@ public class BookController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<BookDto>> getBooksByUser(@PathVariable Long userId) {
         log.info("Запрос на получение книг для пользователя с ID {}", userId);
-        return ResponseEntity.ok(bookService.getBooksByUser(userId));
+        List<BookDto> books = bookService.getBooksByUser(userId);
+        return ResponseEntity.ok(books);
     }
 
     /**
@@ -89,17 +88,21 @@ public class BookController {
     /**
      * Создание новой книги.
      * <p>
-     * Этот метод позволяет создать новую книгу.
+     * Этот метод позволяет создать новую книгу с возможностью загрузки обложки.
      * Доступен только пользователю с ролью ADMIN.
+     * <p>
+     * Ожидает multipart-запрос, содержащий JSON-данные книги и, опционально, файл обложки.
      *
-     * @param bookDto объект Book, который приходит в теле запроса.
-     * @return ResponseEntity с созданной книгой или сообщением об ошибке.
+     * @param bookDto   JSON-объект с данными книги, передаётся как часть запроса с ключом "book".
+     * @param coverFile (Необязательно) Файл обложки книги, передаётся как часть запроса с ключом "cover".
+     * @return ResponseEntity с созданной книгой, включая путь к сохранённой обложке, или сообщение об ошибке.
      */
-    @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<BookDto> createBook(@RequestBody @Valid BookDto bookDto) {
+    @PostMapping("/create")  // Путь для создания книги
+    public ResponseEntity<BookDto> createBook(@RequestPart("book") @Valid BookDto bookDto,
+                                              @RequestPart(value = "cover", required = false) MultipartFile coverFile) {
         log.info("Запрос на создание новой книги: {}", bookDto);
-        BookDto createdBook = bookService.createBook(bookDto);
+        BookDto createdBook = bookService.createBook(bookDto, coverFile);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdBook);
     }
 

@@ -4,16 +4,14 @@ import app_rest_libraryfinalproject.dto.PersonDeleteDTO;
 import app_rest_libraryfinalproject.dto.PersonUpdateDTO;
 import app_rest_libraryfinalproject.model.Person;
 import app_rest_libraryfinalproject.service.PeopleService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 
 @Component
+@RequiredArgsConstructor
 public class AuthValidator {
     private final PeopleService peopleService;
-
-    public AuthValidator(PeopleService peopleService) {
-        this.peopleService = peopleService;
-    }
 
     public void validateRegistration(Person person, BindingResult bindingResult) {
         if (peopleService.findByUsername(person.getUsername()).isPresent()) {

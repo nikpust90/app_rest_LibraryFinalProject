@@ -41,4 +41,5 @@ public class BookDto {
     private String removedPerson;
 
     private Long ownerId;
+    private String coverPath;
 }

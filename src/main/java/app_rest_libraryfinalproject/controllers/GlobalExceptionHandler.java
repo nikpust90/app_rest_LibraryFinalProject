@@ -18,13 +18,13 @@ public class GlobalExceptionHandler {
      *
      * @param e Исключение, которое было выброшено.
      * @return Ответ с ошибкой.
-     */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleException(Exception e) {
+    */
+   @ExceptionHandler(Exception.class)
+   public ResponseEntity<String> handleException(Exception e) {
         log.error("Произошла ошибка: {}", e.getMessage(), e);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Ошибка: " + e.getMessage());
-    }
+       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+               .body("Ошибка: " + e.getMessage());
+   }
 
     /**
      * Обработчик ошибки, если книга не найдена.

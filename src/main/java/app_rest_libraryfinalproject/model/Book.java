@@ -48,6 +48,9 @@ public class Book {
     @Column(name = "isBookDeleted")
     private Boolean isBookDeleted;
 
+    @Column(name = "coverPath")
+    private String coverPath;
+
     @ManyToOne
     @JoinColumn(name = "owner_id")
     private Person owner;

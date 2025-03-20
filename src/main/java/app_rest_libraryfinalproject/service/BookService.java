@@ -9,9 +9,15 @@ import app_rest_libraryfinalproject.repositories.PeopleRepository;
 import app_rest_libraryfinalproject.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +29,14 @@ public class BookService {
     private final BookRepository repository;
     private final BookMapper mapper;
     private final PeopleRepository peopleRepository;
+
+    // Получить список книг
+    public List<BookDto> getAllBooks() {
+        return repository.findAll()
+                .stream()
+                .map(mapper::toDtoForGet)
+                .toList();
+    }
 
     // Получить книгу по ID
     public BookDto getBookById(Long id) {
@@ -41,7 +55,7 @@ public class BookService {
     }
 
     // Назначить книгу текущему пользователю
-    @Transactional  // Операция, которая должна быть атомарной
+    @Transactional
     public void assignBookToCurrentUser(Long bookId) {
         String username = UserUtils.getCurrentUsername();
         log.info("Назначаем книгу с ID {} пользователю с username {}", bookId, username);
@@ -62,23 +76,43 @@ public class BookService {
 
     // Создать новую книгу
     @Transactional
-    public BookDto createBook(BookDto bookDto) {
+    public BookDto createBook(BookDto bookDto, MultipartFile coverFile) {
         log.info("Создание книги: {}", bookDto.getName());
-        // Проверяем, есть ли уже книга с таким названием
+
         Optional<Book> existingBook = repository.findByName(bookDto.getName());
         if (existingBook.isPresent()) {
             throw new RuntimeException("Книга с названием '" + bookDto.getName() + "' уже существует");
         }
 
-        // Получаем имя текущего пользователя
         String currentUser = UserUtils.getCurrentUsername();
-
-        Book book = mapper.toEntity(bookDto);  // Преобразуем DTO в сущность
+        Book book = mapper.toEntity(bookDto);
         book.setCreatedPerson(currentUser);
         book.setCreatedAt(UserUtils.getCurrentTime());
 
-        // Сохраняем книгу и возвращаем её DTO
+        // Сохранение обложки, если она есть
+        if (coverFile != null && !coverFile.isEmpty()) {
+            book = repository.save(book); // Сначала сохраняем книгу, чтобы получить ID
+            try {
+                String coverPath = saveCoverImage(book.getId(), coverFile);
+                book.setCoverPath(coverPath);
+            } catch (IOException e) {
+                log.error("Ошибка при сохранении обложки книги с ID {}: {}", book.getId(), e.getMessage());
+                throw new RuntimeException("Не удалось сохранить обложку книги", e);
+            }
+        }
+
         return mapper.toDtoForCreate(repository.save(book));
+    }
+
+    private String saveCoverImage(Long bookId, MultipartFile file) throws IOException {
+        String uploadDir = "C:" + File.separator + "Обложки";
+        Files.createDirectories(Paths.get(uploadDir)); // Создаём папку, если её нет
+
+        String filename = bookId + "_cover.jpg"; // Файл сохраняется по ID книги
+        Path filePath = Paths.get(uploadDir, filename);
+        Files.write(filePath, file.getBytes()); // Здесь может быть UncheckedIOException
+
+        return filePath.toString(); // Сохраняем путь в БД
     }
 
     // Обновить информацию о книге
