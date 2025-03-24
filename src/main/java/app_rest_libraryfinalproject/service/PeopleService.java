@@ -26,6 +26,7 @@ public class PeopleService {
         peopleRepository.save(person);
     }
 
+    @Transactional
     public void updatePerson(Person person) {
         peopleRepository.save(person);
     }
@@ -34,6 +35,7 @@ public class PeopleService {
         return peopleRepository.findByUsername(username);
     }
 
+    @Transactional
     public void deletePerson(Long id) {
         peopleRepository.deleteById(id);
     }

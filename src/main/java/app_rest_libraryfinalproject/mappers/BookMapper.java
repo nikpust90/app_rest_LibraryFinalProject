@@ -14,7 +14,7 @@ public interface BookMapper {
     @Mapping(target = "removedAt", ignore = true)
     @Mapping(target = "createdAt", source = "createdAt")
     @Mapping(target = "createdPerson", source = "createdPerson")
-    @Mapping(target = "ownerId", source = "owner.id") // Маппинг owner -> ownerId
+    @Mapping(target = "ownerId", source = "owner.id")
     BookDto toDtoForCreate(Book book);
 
     @Mapping(target = "id", ignore = true)
@@ -42,7 +42,7 @@ public interface BookMapper {
     @Mapping(target = "updatedPerson", ignore = true)
     @Mapping(target = "removedPerson", ignore = true)
     @Mapping(target = "removedAt", ignore = true)
-    @Mapping(target = "owner", ignore = true) // Игнорируем, если не маппим напрямую
+    @Mapping(target = "owner", ignore = true)
     Book toEntity(BookDto bookDto);
 }
 

@@ -30,7 +30,7 @@ public class BookDto {
     @Size(max = 1000, message = "Аннотация не должна превышать 1000 символов")
     private String annotation;
 
-    Boolean isBookDeleted;
+    private Boolean isBookDeleted;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
