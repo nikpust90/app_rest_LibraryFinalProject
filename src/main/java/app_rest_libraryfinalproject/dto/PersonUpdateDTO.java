@@ -11,12 +11,12 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL) // Исключаем null-значения
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PersonUpdateDTO {
 
     @NotEmpty(message = "Имя пользователя не может быть пустым")
     @Size(min = 2, max = 20, message = "Имя пользователя должно быть от 2 до 20 символов")
-    private String username; // Используется как идентификатор
+    private String username;
 
     private Integer yearOfBirth;
 

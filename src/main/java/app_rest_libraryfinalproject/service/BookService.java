@@ -39,6 +39,7 @@ public class BookService {
     }
 
     // Получить книгу по ID
+    @Transactional
     public BookDto getBookById(Long id) {
         log.debug("Получаем книгу с ID: {}", id);
         Book book = repository.findById(id)
@@ -47,6 +48,7 @@ public class BookService {
     }
 
     // Получить книги, принадлежащие конкретному пользователю
+    @Transactional
     public List<BookDto> getBooksByUser(Long userId) {
         log.debug("Получаем книги пользователя с ID: {}", userId);
         return repository.findByOwnerId(userId).stream()

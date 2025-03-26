@@ -31,6 +31,7 @@ public class PeopleService {
         peopleRepository.save(person);
     }
 
+    @Transactional
     public Optional<Person> findByUsername(String username) {
         return peopleRepository.findByUsername(username);
     }
